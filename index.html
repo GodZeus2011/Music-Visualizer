@@ -8,11 +8,20 @@
     <script src="visual.js" defer></script>
 </head>
 <body>
-    <div id=""controls>
-        <input type="file" id="file" accept="audio/*">
-        <audio id="audio" controls></audio>
+    <div id="app">
+        <div id="controls">
+            <h2>Music Visualizer</h2>
+            <input type="file" id="file" accept="audio/*">
+            <audio id="audio" controls></audio>
+            <div id="buttons">
+            <button onclick='setMode("bars")'>Bars</button>
+            <button onclick='setMode("circle")'>Circles</button>
+            <button onclick='setMode("wave")'>Waves</button>
+            </div>
+        </div>
+        <div id="visual-box">
+            <canvas id="canvas"></canvas>
+        </div>
     </div>
-
-    <canvas id="canvas"></canvas>
 </body>
 </html>
