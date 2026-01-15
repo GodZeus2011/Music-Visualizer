@@ -13,7 +13,7 @@ function setMode(m) {
     mode = m;
 }
 
-fileInput.addEventListener('change', () => {
+fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (!file) return;
 
@@ -21,9 +21,11 @@ fileInput.addEventListener('change', () => {
     audio.load()
     audio.play()
 
-    audioContext = new AudioContext();
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    await audioContext.resume();
     source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
+    analyser.smoothingTimeConstant = 0.85;
     analyser.fftSize = 512;
 
     source.connect(analyser);
@@ -43,57 +45,113 @@ function animate() {
     if ( mode === "bars" ) drawBars();
     if ( mode === "circle" ) drawCircle();
     if ( mode === "wave" ) drawWave();
+    if ( mode === "particles" ) drawParticles();
+    if ( mode === "mirror" ) drawMirror();
 }
 
 function drawBars() {
-    const barWidth = (canvas.width / dataArray.length) * 2;
+    const start = 5;
+    const end = dataArray.length * 0.6;
+
+    const visibleBins = end - start;
+    const barWidth = canvas.width / visibleBins;
+
     let x = 0;
 
-    for (let i = 0; i < dataArray.length; i++) {
-        const h = dataArray[i];
+    for (let i = start; i < end; i++) {
+        const h = Math.pow(dataArray[i] / 255, 1.7) * 255;
         ctx.fillStyle = `rgb(${h + 50},80,255)`;
         ctx.fillRect(x, canvas.height - h, barWidth, h);
         x += barWidth + 1;
     }
 }
+function getSmoothedValue(i, start, end, dataArray) {
+    let sum = 0;
+    let count = 0;
+    const len = end - start;
 
+    for (let j = -3; j <= 3; j++) {
+        let index = i + j;
+
+        if (index < start) index = end - (start - index);
+        if (index >= end) index = start + (index - end);
+
+        sum += dataArray[index];
+        count++;
+    }
+
+    return sum / count;
+}
 function drawCircle() {
-    const radius = 150;
+    const start = 5;
+    const end = dataArray.length * 0.6;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const baseRadius = 120;
+    const visibleBins = end - start;
+
+    // Create a smoothed array to make bars continuous
+    const smoothed = [];
+    for (let i = start; i < end; i++) {
+        let sum = 0;
+        let count = 0;
+        for (let j = -2; j <= 2; j++) { // smooth over ±2 bins
+            let idx = i + j;
+            if (idx < start) idx = end - (start - idx);
+            if (idx >= end) idx = start + (idx - end);
+            sum += dataArray[idx];
+            count++;
+        }
+        smoothed.push(sum / count);
+    }
+
     ctx.save();
-    ctx.translate(canvas.width/2, canvas.height/2);
+    ctx.translate(centerX, centerY);
 
-    for (let i = 0; i < dataArray.length; i++) {
-        const angle = (i / dataArray.length) * Math.PI * 2;
-        const h = dataArray[i];
-        const lineLength = h * 0.8;
+    const totalBars = smoothed.length;
 
-        ctx.strokeStyle = `rgb(100,${h + 50},255)`;
+    for (let i = 0; i < totalBars; i++) {
+        const t = i / totalBars;
+        const angle = t * Math.PI * 2;
+
+        // Use sine curve to make the start/end less abrupt
+        const raw = smoothed[i] / 255;
+        const scaled = Math.pow(raw, 1.2); // slightly softer curve
+        const barLength = scaled * 200 + 20; // minimum 20px, max scaled
+
+        const x1 = Math.cos(angle) * baseRadius;
+        const y1 = Math.sin(angle) * baseRadius;
+        const x2 = Math.cos(angle) * (baseRadius + barLength);
+        const y2 = Math.sin(angle) * (baseRadius + barLength);
+
+        ctx.strokeStyle = 'white';
         ctx.lineWidth = 2;
+
         ctx.beginPath();
-        ctx.moveTo(
-            Math.cos(angle) * radius,
-            Math.sin(angle) * radius
-        );
-        ctx.lineTo(
-            Math.cos(angle) * (radius + lineLength),
-            Math.sin(angle) * (radius + lineLength)
-        );
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.stroke();
     }
+
     ctx.restore();
 }
 
+
 function drawWave() {
+    const start = 5;
+    const end = dataArray.length * 0.6;
+
     analyser.getByteTimeDomainData(dataArray);
 
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#4cc3ff';
     ctx.beginPath();
 
-    const slice = canvas.width / dataArray.length;
+    const visibleBins = end - start;
+    const slice = canvas.width / visibleBins;
     let x = 0;
 
-    for (let i = 0; i < dataArray.length; i++) {
+    for (let i = start; i < end; i++) {
         const v = dataArray[i] / 128.0;
         const y = (v * canvas.height / 2);
         
@@ -106,6 +164,47 @@ function drawWave() {
     ctx.lineTo(canvas.width, canvas.height / 2);
     ctx.stroke();
 }
+
+function drawParticles() {
+    const start = 5;
+    const end = dataArray.length * 0.6;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    for (let i = start; i < end; i += 16) {
+        const value = dataArray[i];
+        const angle = ((i - start) / (end - start)) * Math.PI * 2;
+        const radius = value * 1.5;
+
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+
+        ctx.fillStyle = `rgba(100,200,255,0.8)`;
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawMirror() {
+    const start = 5;
+    const end = dataArray.length * 0.6;
+
+    const barWidth = canvas.width / dataArray.length * 4;
+    const centerY = canvas.height / 2;
+    let x = 0;
+
+    for (let i = start; i < end; i++) {
+        const h = Math.pow(dataArray[i] / 255, 1.7) * 255;
+
+        ctx.fillStyle = `rgb(150,${h + 50},255)`;
+        ctx.fillRect(x, centerY - h/2, barWidth, h/2);
+        ctx.fillRect(x, centerY, barWidth, h/2);
+        x += barWidth + 1;
+    }
+}
+
 
 window.addEventListener('resize', () => {
   canvas.width = canvas.parentElement.clientWidth;
