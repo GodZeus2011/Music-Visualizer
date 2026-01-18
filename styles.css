@@ -1,47 +1,47 @@
 body {
-    margin: 0;
-    background: radial-gradient(circle at top, #0f0f2e, #050510);
-    font-family: system-ui, sans-serif;
-    color: #ffffff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
+  margin: 0;
+  background: radial-gradient(circle at top, #0f0f2e, #050510);
+  font-family: system-ui, sans-serif;
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
 }
 
 #app {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
 #controls {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(12px);
-    padding: 20px 30px;
-    border-radius: 15px;
-    box-shadow: 0 0 25px rgba(0,0,0,0.5);
-    text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  padding: 20px 30px;
+  border-radius: 15px;
+  box-shadow: 0 0 25px rgba(0,0,0,0.5);
+  text-align: center;
 }
 
 #controls h2 {
-    margin: 0 0 10px 0;
-    font-size: 18px;
+  margin: 0 0 10px 0;
+  font-size: 18px;
 }
 
 #controls input,
 #controls audio {
-    margin-top: 5px 0;
+  margin: 5px 0;
 }
 
-.buttons { 
-    margin-top: 10px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
+.buttons {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }
 
 button {

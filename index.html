@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Visualizer</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="visual.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Visualizer</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="visual.js" defer></script>
 </head>
 <body>
-    <div id="app">
-        <div id="controls">
-            <h2>Music Visualizer</h2>
-            <input type="file" id="file" accept="audio/*">
-            <audio id="audio" controls></audio>
-            <div id="buttons">
-            <button onclick='setMode("bars")'>Bars</button>
-            <button onclick='setMode("circle")'>Circles</button>
-            <button onclick='setMode("wave")'>Waves</button>
-            <button onclick='setMode("particles")'>Particles</button>
-            <button onclick='setMode("mirror")'>Mirror</button>
-            </div>
-        </div>
-        <div id="visual-box">
-            <canvas id="canvas"></canvas>
-        </div>
+  <div id="app">
+    <div id="controls">
+      <h2>Music Visualizer</h2>
+      <input type="file" id="file" accept="audio/*">
+      <audio id="audio" controls></audio>
+
+      <div class="buttons">
+        <button onclick='setMode("bars")'>Bars</button>
+        <button onclick='setMode("circle")'>Circles</button>
+        <button onclick='setMode("wave")'>Waves</button>
+        <button onclick='setMode("particles")'>Particles</button>
+        <button onclick='setMode("mirror")'>Mirror</button>
+      </div>
     </div>
+
+    <div id="visual-box">
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
 </body>
 </html>
