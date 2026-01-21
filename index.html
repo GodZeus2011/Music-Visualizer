@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Music Visualizer</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
   <script src="visual.js" defer></script>
 </head>
 <body>
   <div id="app">
     <div id="controls">
       <h2>Music Visualizer</h2>
+
       <input type="file" id="file" accept="audio/*">
       <audio id="audio" controls></audio>
+
+      <div id="dropzone">Drag & drop audio file here</div>
+
+      <button id="mic-toggle" type="button">Use Microphone</button>
 
       <div class="buttons">
         <button onclick='setMode("bars")'>Bars</button>
@@ -28,4 +33,3 @@
     </div>
   </div>
 </body>
-</html>

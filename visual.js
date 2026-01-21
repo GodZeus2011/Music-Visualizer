@@ -3,21 +3,31 @@ const audio = document.getElementById('audio');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
+const dropZone = document.getElementById('dropzone');
+const micToggle = document.getElementById('mic-toggle');
+
 canvas.width = canvas.parentElement.clientWidth;
 canvas.height = canvas.parentElement.clientHeight;
 
 let audioContext = null;
 let analyser = null;
-let sourceNode = null;
-let dataArray = null;
+let sourceNode = null;      
+let micSourceNode = null;   
+let micStream = null;
+let usingMic = false;
 
 let mode = "bars";
 let wavePhase = 0;
 
-let bassEnv   = 0;
-let highEnv   = 0;
 let bandEnv = [0, 0, 0, 0, 0];
-let idleBeat = 0; 
+let idleBeat = 0;
+
+let waveEnergy = 0;
+
+const PARTICLE_COUNT = 720;
+const PARTICLE_LAYERS = 3;
+let particles = [];
+
 
 function setMode(m) {
   mode = m;
@@ -43,16 +53,144 @@ async function initAudio() {
   }
 }
 
-fileInput.addEventListener('change', async () => {
-  const file = fileInput.files[0];
-  if (!file) return;
+async function handleFile(file) {
+  if (!file || !file.type.startsWith('audio/')) return;
+
+  if (usingMic) {
+    await stopMic();
+  }
+
+  await initAudio();
 
   audio.src = URL.createObjectURL(file);
   audio.load();
 
-  await initAudio();
-  audio.play();
+  try {
+    await audio.play();
+  } catch (err) {
+    console.error("Audio play error:", err);
+  }
+}
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
 });
+
+if (dropZone) {
+  ["dragenter", "dragover"].forEach(ev => {
+    dropZone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.add("drag-over");
+    });
+  });
+
+  ["dragleave", "dragend"].forEach(ev => {
+    dropZone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove("drag-over");
+    });
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove("drag-over");
+
+    const files = e.dataTransfer.files;
+    if (!files || !files.length) return;
+
+    const file =
+      Array.from(files).find(f => f.type.startsWith("audio/")) || files[0];
+
+    if (file) handleFile(file);
+  });
+}
+
+["dragover", "drop"].forEach(ev => {
+  window.addEventListener(ev, (e) => e.preventDefault());
+});
+
+
+if (micToggle) {
+  micToggle.addEventListener("click", async () => {
+    if (!usingMic) {
+      await startMic();
+    } else {
+      await stopMic();
+    }
+  });
+}
+
+async function startMic() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("Microphone is not supported in this browser.");
+    return;
+  }
+
+  await initAudio();
+
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: false
+    });
+  } catch (err) {
+    console.error("Mic access error:", err);
+    alert("Microphone permission denied.");
+    return;
+  }
+
+  audio.pause();
+  audio.currentTime = 0;
+
+  if (sourceNode) {
+    try { sourceNode.disconnect(); } catch (e) {}
+  }
+
+  if (micSourceNode) {
+    try { micSourceNode.disconnect(); } catch (e) {}
+  }
+
+  micSourceNode = audioContext.createMediaStreamSource(micStream);
+
+  if (analyser) {
+    try { analyser.disconnect(); } catch (e) {}
+  }
+
+  micSourceNode.connect(analyser);
+
+  usingMic = true;
+  if (micToggle) micToggle.textContent = "Stop Microphone";
+}
+
+async function stopMic() {
+  if (!usingMic) return;
+
+  if (micSourceNode) {
+    try { micSourceNode.disconnect(); } catch (e) {}
+    micSourceNode = null;
+  }
+
+  if (micStream) {
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+  }
+
+  if (analyser) {
+    try { analyser.disconnect(); } catch (e) {}
+  }
+
+  if (sourceNode && analyser && audioContext) {
+    sourceNode.connect(analyser);
+    analyser.connect(audioContext.destination);
+  }
+
+  usingMic = false;
+  if (micToggle) micToggle.textContent = "Use Microphone";
+}
 
 function animate() {
   requestAnimationFrame(animate);
@@ -61,7 +199,7 @@ function animate() {
 
   analyser.getByteFrequencyData(dataArray);
 
-  ctx.fillStyle = 'rgba(5, 5, 10, 0.3)';
+  ctx.fillStyle = "rgb(5, 5, 10)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   switch (mode) {
@@ -98,13 +236,12 @@ function drawCircle() {
   const cy = h / 2;
 
   const minSide = Math.min(w, h);
-  const margin = 20;                          // less margin -> larger ring
-  const radiusLimit = minSide * 0.5 - margin; // absolute max radius
+  const margin = 20;
+  const radiusLimit = minSide * 0.5 - margin;
 
   const len = dataArray.length;
 
-  // ---- 1) Split spectrum into 5 bands and measure energy ----
-  const bandSplits = [0.0, 0.08, 0.18, 0.35, 0.6, 1.0]; // 5 bands
+  const bandSplits = [0.0, 0.08, 0.18, 0.35, 0.6, 1.0];
   const bandCount = 5;
 
   const bandSum = new Array(bandCount).fill(0);
@@ -115,7 +252,7 @@ function drawCircle() {
   for (let i = 0; i < len; i++) {
     const v = dataArray[i];
     sumAll += v;
-    const norm = i / (len - 1); // 0..1
+    const norm = i / (len - 1);
 
     let b = 0;
     if (norm < bandSplits[1])      b = 0;
@@ -128,7 +265,7 @@ function drawCircle() {
     bandBins[b]++;
   }
 
-  const avgAll = (sumAll / len) / 255; // overall loudness
+  const avgAll = (sumAll / len) / 255;
 
   const bandAvgNorm = new Array(bandCount).fill(0);
   for (let b = 0; b < bandCount; b++) {
@@ -137,12 +274,9 @@ function drawCircle() {
       : 0;
   }
 
-  // ---- 2) Targets + smoothing (more gain -> more reactive) ----
-  // stronger gain for all bands
   const bandGain = [3.4, 3.2, 3.0, 3.2, 3.6];
   const bandPow  = [1.0, 1.0, 1.0, 1.0, 1.0];
 
-  // faster attack, slightly slower release (snappier)
   const attack  = [0.9, 0.85, 0.8, 0.8, 0.85];
   const release = [0.2, 0.22, 0.24, 0.26, 0.28];
 
@@ -159,7 +293,6 @@ function drawCircle() {
     totalBandEnergy += bandEnv[b];
   }
 
-  // ---- 3) Idle beat when very quiet ----
   const veryQuiet = avgAll < 0.04 && totalBandEnergy < 0.25;
 
   if (veryQuiet && idleBeat < 0.05 && Math.random() < 0.03) {
@@ -168,10 +301,8 @@ function drawCircle() {
   idleBeat *= 0.9;
   const idleBoost = idleBeat;
 
-  // ---- 4) Base radii & amplitudes (bigger outer ring, more movement) ----
-  // outer -> inner, as fraction of radiusLimit
-  const baseFrac = [0.88, 0.72, 0.57, 0.42, 0.28]; // outer ring larger now
-  const ampFrac  = [0.22, 0.18, 0.15, 0.12, 0.10]; // all rings more reactive
+  const baseFrac = [0.88, 0.72, 0.57, 0.42, 0.28];
+  const ampFrac  = [0.22, 0.18, 0.15, 0.12, 0.10];
 
   const radii = new Array(bandCount);
 
@@ -181,12 +312,11 @@ function drawCircle() {
 
     let level = bandEnv[b];
 
-    // outermost band (bass) gets idle boost when quiet
     if (b === 0) {
       level = Math.min(1, level + idleBoost * (1 - level));
     }
 
-    const jitter = (Math.random() - 0.5) * 0.05; // small wobble
+    const jitter = (Math.random() - 0.5) * 0.05;
     level = Math.max(0, Math.min(1, level + jitter));
 
     radii[b] = baseR + amp * level;
@@ -200,9 +330,6 @@ function drawCircle() {
   ctx.translate(cx, cy);
   ctx.rotate(wavePhase * 0.1);
 
-  // ---- 5) Draw 5 rings (outer -> inner) ----
-
-  // Outer (bass)
   {
     const r = radii[0];
     ctx.beginPath();
@@ -220,7 +347,6 @@ function drawCircle() {
     ctx.stroke();
   }
 
-  // Ring 2
   {
     const r = radii[1];
     ctx.beginPath();
@@ -232,7 +358,6 @@ function drawCircle() {
     ctx.stroke();
   }
 
-  // Ring 3
   {
     const r = radii[2];
     ctx.beginPath();
@@ -244,7 +369,6 @@ function drawCircle() {
     ctx.stroke();
   }
 
-  // Ring 4
   {
     const r = radii[3];
     ctx.beginPath();
@@ -256,7 +380,6 @@ function drawCircle() {
     ctx.stroke();
   }
 
-  // Inner core (highs)
   {
     const r = radii[4];
     ctx.beginPath();
@@ -278,59 +401,225 @@ function drawCircle() {
   }
 
   ctx.restore();
-
   wavePhase += 0.02;
 }
 
 function drawWave() {
-  const start = 5;
-  const end = Math.floor(dataArray.length * 0.6);
+  if (!dataArray || !analyser) return;
+
+  const width  = canvas.width;
+  const height = canvas.height;
+  const centerY = height * 0.5;
 
   analyser.getByteTimeDomainData(dataArray);
 
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#4cc3ff';
-  ctx.beginPath();
+  let sumSq = 0;
+  for (let i = 0; i < dataArray.length; i++) {
+    const v = (dataArray[i] - 128) / 128;
+    sumSq += v * v;
+  }
+  const rms = Math.sqrt(sumSq / dataArray.length);
 
-  const visibleBins = end - start;
-  const slice = canvas.width / visibleBins;
-  let x = 0;
+  let target = Math.min(1, rms * 2.5);
 
-  for (let i = start; i < end; i++) {
-    const v = dataArray[i] / 128.0;
-    const y = v * (canvas.height / 2);
+  const attack = 0.15;
+  const release = 0.05;
+  waveEnergy += (target - waveEnergy) * (target > waveEnergy ? attack : release);
 
-    if (i === start) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+  const baseAmp   = height * 0.06;
+  const extraAmp  = height * 0.16 * waveEnergy;
+  const amplitude = baseAmp + extraAmp;
 
-    x += slice;
+  const POINTS = 120;
+  const step = dataArray.length / POINTS;
+  const samples = new Array(POINTS);
+
+  for (let i = 0; i < POINTS; i++) {
+    const centerIndex = i * step;
+    const i0 = Math.floor(centerIndex - 2);
+    const i1 = Math.floor(centerIndex + 2);
+    let sum = 0;
+    let count = 0;
+
+    for (let j = i0; j <= i1; j++) {
+      if (j < 0 || j >= dataArray.length) continue;
+      const v = (dataArray[j] - 128) / 128;
+      sum += v;
+      count++;
+    }
+    samples[i] = count ? sum / count : 0;
   }
 
-  ctx.lineTo(canvas.width, canvas.height / 2);
+  for (let pass = 0; pass < 2; pass++) {
+    const tmp = samples.slice();
+    for (let i = 1; i < POINTS - 1; i++) {
+      samples[i] = (tmp[i - 1] + tmp[i] + tmp[i + 1]) / 3;
+    }
+  }
+
+  ctx.lineWidth = 1.5 + 2.5 * waveEnergy;
+  ctx.shadowBlur = 12 + 18 * waveEnergy;
+  ctx.shadowColor = "rgba(80, 200, 255, 0.9)";
+
+  const grad = ctx.createLinearGradient(0, 0, width, 0);
+  grad.addColorStop(0.0, "#1d3cff");
+  grad.addColorStop(0.5, "#3dd5ff");
+  grad.addColorStop(1.0, "#4ff0c8");
+  ctx.strokeStyle = grad;
+
+  ctx.beginPath();
+
+  let x0 = 0;
+  let y0 = centerY + samples[0] * amplitude;
+  ctx.moveTo(x0, y0);
+
+  for (let i = 1; i < POINTS - 1; i++) {
+    const x1 = (i / (POINTS - 1)) * width;
+    const y1 = centerY + samples[i] * amplitude;
+    const x2 = ((i + 1) / (POINTS - 1)) * width;
+    const y2 = centerY + samples[i + 1] * amplitude;
+
+    const xc = (x1 + x2) / 2;
+    const yc = (y1 + y2) / 2;
+
+    ctx.quadraticCurveTo(x1, y1, xc, yc);
+  }
   ctx.stroke();
+
+  ctx.globalAlpha = 0.25;
+  ctx.shadowBlur = 8 + 10 * waveEnergy;
+
+  ctx.beginPath();
+  x0 = 0;
+  y0 = centerY - samples[0] * amplitude * 0.6;
+  ctx.moveTo(x0, y0);
+
+  for (let i = 1; i < POINTS - 1; i++) {
+    const x1 = (i / (POINTS - 1)) * width;
+    const y1 = centerY - samples[i] * amplitude * 0.6;
+    const x2 = ((i + 1) / (POINTS - 1)) * width;
+    const y2 = centerY - samples[i + 1] * amplitude * 0.6;
+
+    const xc = (x1 + x2) / 2;
+    const yc = (y1 + y2) / 2;
+    ctx.quadraticCurveTo(x1, y1, xc, yc);
+  }
+
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function initParticles() {
+  particles = [];
+
+  const w = canvas.width;
+  const h = canvas.height;
+  const minSide = Math.min(w, h);
+  const TAU = Math.PI * 2;
+
+  const radiusBands = [
+    { min: minSide * 0.30, max: minSide * 0.46 },
+    { min: minSide * 0.20, max: minSide * 0.34 },
+    { min: minSide * 0.12, max: minSide * 0.24 }
+  ];
+
+  const freqBands = [
+    { start: 0.00, end: 0.30 },
+    { start: 0.25, end: 0.65 },
+    { start: 0.60, end: 0.95 }
+  ];
+
+  const hueBase = [210, 260, 180];
+
+  const perLayer = Math.floor(PARTICLE_COUNT / PARTICLE_LAYERS);
+
+  for (let layer = 0; layer < PARTICLE_LAYERS; layer++) {
+    const rBand = radiusBands[layer];
+    const fBand = freqBands[layer];
+
+    for (let i = 0; i < perLayer; i++) {
+      const angle = Math.random() * TAU;
+
+      const baseRadius =
+        rBand.min + (rBand.max - rBand.min) * Math.random();
+
+      const speedMag = 0.0012 + Math.random() * 0.0018;
+      const direction = (layer === 1) ? -1 : 1;
+      const speed = speedMag * direction;
+
+      const size = 2.2 + Math.random() * 0.6;
+      const norm = fBand.start + (fBand.end - fBand.start) * Math.random();
+      const binIndex = Math.floor(norm * (dataArray.length - 1));
+
+      const radiusAmp =
+        (layer === 0 ? minSide * 0.18 :
+         layer === 1 ? minSide * 0.14 :
+                       minSide * 0.10);
+
+      const hueJitter = (Math.random() - 0.5) * 20;
+      const hue = hueBase[layer] + hueJitter;
+
+      particles.push({
+        layer,
+        angle,
+        baseRadius,
+        speed,
+        size,
+        binIndex,
+        radiusAmp,
+        hue
+      });
+    }
+  }
 }
 
 function drawParticles() {
-  const start = 5;
-  const end = Math.floor(dataArray.length * 0.6);
+  if (!dataArray) return;
+
+  if (particles.length === 0) {
+    initParticles();
+  }
 
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
+  const TAU = Math.PI * 2;
 
-  for (let i = start; i < end; i += 2) {
-    const value = dataArray[i];
-    const angle = ((i - start) / (end - start)) * Math.PI * 2;
-    const radius = value * 1.5;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
 
-    const x = centerX + Math.cos(angle) * radius;
-    const y = centerY + Math.sin(angle) * radius;
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
 
-    ctx.fillStyle = `rgba(100,200,255,0.8)`;
+    const idx = Math.min(p.binIndex, dataArray.length - 1);
+    const v = dataArray[idx] / 255;
+
+    let energy = Math.pow(v, 1.1) * 1.4;
+    if (energy > 1) energy = 1;
+
+    p.angle += p.speed * (0.7 + energy * 4.0);
+
+    const radius = p.baseRadius + energy * p.radiusAmp;
+
+    const x = centerX + Math.cos(p.angle) * radius;
+    const y = centerY + Math.sin(p.angle) * radius;
+
+    const size = p.size * (0.9 + energy * 1.8);
+
+    let alpha = 0.22 + energy * 0.95;
+    if (alpha > 1) alpha = 1;
+
+    ctx.shadowBlur = 20 + 40 * energy;
+    ctx.shadowColor = `hsla(${p.hue}, 95%, 70%, ${alpha})`;
+    ctx.fillStyle   = `hsla(${p.hue}, 90%, 70%, ${alpha})`;
+
     ctx.beginPath();
-    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.arc(x, y, size, 0, TAU);
     ctx.fill();
   }
+
+  ctx.restore();
 }
+
 function drawMirror() {
   const start = 5;
   const end = Math.floor(dataArray.length * 0.6);
@@ -352,4 +641,5 @@ function drawMirror() {
 window.addEventListener('resize', () => {
   canvas.width = canvas.parentElement.clientWidth;
   canvas.height = canvas.parentElement.clientHeight;
+  particles = []; 
 });
