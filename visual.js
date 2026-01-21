@@ -54,7 +54,15 @@ async function initAudio() {
 }
 
 async function handleFile(file) {
-  if (!file || !file.type.startsWith('audio/')) return;
+  if (!file) return;
+
+  const isAudioByType = file.type && file.type.startsWith('audio/');
+  const isAudioByName = /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(file.name);
+
+  if (!isAudioByType && !isAudioByName) {
+    alert("Please select an audio file (mp3, wav, m4a, etc.)");
+    return;
+  }
 
   if (usingMic) {
     await stopMic();
