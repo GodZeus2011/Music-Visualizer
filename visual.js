@@ -5,6 +5,7 @@ const ctx = canvas.getContext('2d');
 
 const dropZone = document.getElementById('dropzone');
 const micToggle = document.getElementById('mic-toggle');
+const fileButton = document.getElementById('file-button');
 
 canvas.width = canvas.parentElement.clientWidth;
 canvas.height = canvas.parentElement.clientHeight;
@@ -15,6 +16,8 @@ let sourceNode = null;
 let micSourceNode = null;   
 let micStream = null;
 let usingMic = false;
+
+let dataArray = null;   
 
 let mode = "bars";
 let wavePhase = 0;
@@ -28,6 +31,16 @@ const PARTICLE_COUNT = 720;
 const PARTICLE_LAYERS = 3;
 let particles = [];
 
+function updateFileName(name) {
+  const el = document.getElementById('file-name');
+  if (!el) return;
+
+  if (!name) {
+    el.textContent = "No file loaded";
+  } else {
+    el.textContent = name;
+  }
+}
 
 function setMode(m) {
   mode = m;
@@ -61,6 +74,7 @@ async function handleFile(file) {
 
   if (!isAudioByType && !isAudioByName) {
     alert("Please select an audio file (mp3, wav, m4a, etc.)");
+    updateFileName(null);
     return;
   }
 
@@ -69,6 +83,8 @@ async function handleFile(file) {
   }
 
   await initAudio();
+
+  updateFileName(file.name);
 
   audio.src = URL.createObjectURL(file);
   audio.load();
@@ -84,6 +100,12 @@ fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) handleFile(file);
 });
+
+if (fileButton) {
+  fileButton.addEventListener('click', () => {
+    fileInput.click();
+  });
+}
 
 if (dropZone) {
   ["dragenter", "dragover"].forEach(ev => {
@@ -120,7 +142,6 @@ if (dropZone) {
 ["dragover", "drop"].forEach(ev => {
   window.addEventListener(ev, (e) => e.preventDefault());
 });
-
 
 if (micToggle) {
   micToggle.addEventListener("click", async () => {
@@ -172,6 +193,8 @@ async function startMic() {
 
   usingMic = true;
   if (micToggle) micToggle.textContent = "Stop Microphone";
+
+  updateFileName("Microphone (live input)");
 }
 
 async function stopMic() {
@@ -199,6 +222,12 @@ async function stopMic() {
   usingMic = false;
   if (micToggle) micToggle.textContent = "Use Microphone";
 }
+
+audio.addEventListener('play', () => {
+  if (usingMic) {
+    stopMic();  
+  }
+});
 
 function animate() {
   requestAnimationFrame(animate);
