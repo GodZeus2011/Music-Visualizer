@@ -23,6 +23,17 @@ function updateActiveModeButton() {
   });
 }
 
+function resizeCanvasToContainer() {
+  if (!canvas || !canvas.parentElement) return;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+
+  if (window.Visuals && window.Visuals.handleResizeForVisuals) {
+    window.Visuals.handleResizeForVisuals();
+  }
+}
+
 function animate() {
   requestAnimationFrame(animate);
 
@@ -63,9 +74,6 @@ window.addEventListener("DOMContentLoaded", () => {
   canvas = document.getElementById("canvas");
   ctx = canvas.getContext("2d");
 
-  canvas.width = canvas.parentElement.clientWidth;
-  canvas.height = canvas.parentElement.clientHeight;
-
   const themeSelect = document.getElementById("theme-select");
   if (themeSelect && window.Themes) {
     themeSelect.innerHTML = "";
@@ -80,25 +88,29 @@ window.addEventListener("DOMContentLoaded", () => {
       currentThemeName = e.target.value;
       theme = getTheme(currentThemeName);
       applyThemeToDocument(theme);
-      VisualsState.particles = [];
+      if (window.VisualsState) {
+        VisualsState.particles = []; 
+      }
     });
   }
 
   theme = getTheme(currentThemeName);
   applyThemeToDocument(theme);
 
-  // init audio handlers
   AudioModule.init();
 
-  // mode button active state
-  updateActiveModeButton();
+  resizeCanvasToContainer();
 
-  // resize
-  window.addEventListener("resize", () => {
-    canvas.width = canvas.parentElement.clientWidth;
-    canvas.height = canvas.parentElement.clientHeight;
-    Visuals.handleResizeForVisuals();
-  });
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => {
+      resizeCanvasToContainer();
+    });
+    ro.observe(canvas.parentElement);
+  } else {
+    window.addEventListener("resize", resizeCanvasToContainer);
+  }
+
+  updateActiveModeButton();
 
   animate();
 });

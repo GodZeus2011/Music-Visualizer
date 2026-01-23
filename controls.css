@@ -1,0 +1,69 @@
+#controls {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  padding: 16px 18px;
+  border-radius: 15px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#controls h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.95;
+  text-align: center;
+  order: 1;  
+}
+#controls .buttons {
+  order: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 equal columns */
+  gap: 10px;
+  margin-top: 6px;
+}
+#controls .buttons button {
+  aspect-ratio: 1 / 1;     
+  padding: 0;               
+  border-radius: 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#controls .buttons button.active-mode {
+  box-shadow: 0 0 14px rgba(76, 195, 255, 0.95);
+  transform: translateY(-1px) scale(1.03);
+}
+.theme-row {
+  order: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+.theme-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+}
+#theme-select {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  font-size: 13px;
+  outline: none;
+}
+#theme-select:focus {
+  border-color: var(--btn-grad2);
+  box-shadow: 0 0 0 1px rgba(76, 195, 255, 0.5);
+}
