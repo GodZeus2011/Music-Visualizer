@@ -115,3 +115,24 @@ window.addEventListener("DOMContentLoaded", () => {
 
   animate();
 });
+(function () {
+  const RELOAD_DELTA = 400;  
+  let smallestWidth = window.innerWidth;
+  let reloaded = false;
+
+  window.addEventListener("resize", () => {
+    if (reloaded) return; 
+    const w = window.innerWidth;
+
+    if (w < smallestWidth) {
+      smallestWidth = w;
+      return;
+    }
+
+    if (w - smallestWidth > RELOAD_DELTA) {
+      console.log("[layout] Window grew from", smallestWidth, "to", w, "px -> reloading");
+      reloaded = true;
+      window.location.reload();
+    }
+  });
+})();
