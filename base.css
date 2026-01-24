@@ -17,20 +17,18 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
-  display: block;
+  display: block; 
 }
 #app {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  grid-template-rows: auto minmax(260px, 1fr);
+  grid-template-columns: 280px minmax(0, 1fr);  
+  grid-template-rows: auto minmax(260px, 1fr);  
   gap: 16px;
   width: 100%;
   max-width: 1200px;
-  height: auto;
-  min-height: 0;
-  padding: 20px;         
+  margin: 0 auto;     
+  padding: 20px;
   box-sizing: border-box;
-  margin: 0 auto;        
 }
 #controls   { grid-column: 1; grid-row: 1; }
 #visual-box { grid-column: 2; grid-row: 1; }
@@ -59,6 +57,28 @@ button:hover {
 button.active-mode {
   box-shadow: 0 0 14px rgba(76,195,255,0.9);
   transform: translateY(-1px) scale(1.02);
+}
+@media (max-width: 1000px) {
+  #app {
+    grid-template-columns: 240px minmax(0, 1fr);
+    padding: 16px;
+  }
+}
+@media (max-width: 768px) {
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 12px;
+    padding: 12px;
+  }
+  #controls   { grid-column: 1; grid-row: 1; }
+  #visual-box { grid-column: 1; grid-row: 2; }
+  #media-panel{ grid-column: 1; grid-row: 3; }
+  #file-panel { grid-column: 1; grid-row: 4; }
+
+  #visual-box {
+    min-height: 260px;
+  }
 }
 @media (max-width: 900px) {
   #app {
