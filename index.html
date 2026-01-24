@@ -10,11 +10,8 @@
   <link rel="stylesheet" href="media-panel.css">
   <link rel="stylesheet" href="canvas-panel.css">
 </head>
-
 <body>
-
   <div id="app">
-
     <div id="file-panel">
     <input type="file" id="file" accept="audio/*">
     <h2 class="panel-title">Music Input</h2>
@@ -42,6 +39,7 @@
         <button data-mode="wave"      onclick='setMode("wave")'>Wave</button>
         <button data-mode="particles" onclick='setMode("particles")'>Particles</button>
         <button data-mode="mirror"    onclick='setMode("mirror")'>Mirror</button>
+        <button data-mode="burst"     onclick='setMode("burst")'>Burst</button>
       </div>
     </div>
 
@@ -82,7 +80,6 @@
       <canvas id="canvas"></canvas>
     </div>
   </div>
-
   <script src="themes.js"></script>
   <script src="visuals.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>

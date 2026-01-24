@@ -1,5 +1,3 @@
-// audio.js
-
 window.AudioModule = (function () {
   let audioContext = null;
   let analyser = null;

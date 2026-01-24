@@ -1,5 +1,3 @@
-// main.js
-
 let canvas, ctx;
 let mode = "bars";
 
@@ -66,6 +64,9 @@ function animate() {
       break;
     case "mirror":
       Visuals.drawMirror(ctx, canvas, dataArray, theme);
+      break;
+    case "burst":       
+      Visuals.drawBurst(ctx, canvas, dataArray, theme);
       break;
   }
 }

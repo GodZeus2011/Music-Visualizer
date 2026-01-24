@@ -1,5 +1,3 @@
-// themes.js
-
 window.Themes = {
   neon: {
     label: "Neon",
@@ -14,7 +12,6 @@ window.Themes = {
     waveGradient: ["#1d3cff", "#3dd5ff", "#4ff0c8"],
     particleHueBase: [210, 260, 180],
   },
-
   ocean: {
     label: "Ocean",
     ui: {
@@ -28,7 +25,6 @@ window.Themes = {
     waveGradient: ["#0b7285", "#12b886", "#a5d8ff"],
     particleHueBase: [190, 170, 210],
   },
-
   sunset: {
     label: "Sunset",
     ui: {
@@ -42,7 +38,6 @@ window.Themes = {
     waveGradient: ["#ff6b6b", "#f97316", "#fde68a"],
     particleHueBase: [20, 40, 350],
   },
-
   forest: {
     label: "Forest",
     ui: {
@@ -56,7 +51,6 @@ window.Themes = {
     waveGradient: ["#15803d", "#22c55e", "#bef264"],
     particleHueBase: [110, 90, 140],
   },
-
   mono: {
     label: "Mono",
     ui: {
@@ -77,45 +71,111 @@ window.Themes = {
     particleHueBase: [0, 0, 0],
     particleSaturation: 0,
   },
-
-  test: {
-    label: "Test",   
-
-    ui: {                     
-      bgStart: "#000000",
-      bgEnd:   "#000000",
-      btnGrad1: "#ff0048",
-      btnGrad2: "#00b3ff",
+  cyberpunk: {
+    label: "Cyberpunk",
+    ui: {
+      bgStart: "#160024",
+      bgEnd:   "#020015",
+      btnGrad1: "#ff0080",
+      btnGrad2: "#00f0ff",
     },
-
-    barsColor: (h) => `rgb(0, ${80 + h / 2}, 255)`,
-
-    mirrorColor: (h) => `rgb(255, 0, ${80 + h / 2})`,
-
-    waveGradient: ["#ff0048", "#805aa4", "#00b3ff"],
-
-    particleHueBase: [343, 271, 198],
-    particleSaturation: 100,
+    barsColor:   (h) => {
+      const v = h / 255;
+      const hue = 300 + 40 * v;
+      return `hsl(${hue}, 90%, ${45 + v * 20}%)`;
+    },
+    mirrorColor: (h) => {
+      const v = h / 255;
+      const hue = 190 + 30 * v;
+      return `hsl(${hue}, 90%, ${40 + v * 25}%)`;
+    },
+    waveGradient: ["#ff0080", "#7c3aed", "#00f0ff"],
+    particleHueBase: [310, 200, 60],
   },
-
-  test2: {
-    label: "Test2",   
-
-    ui: {                     
-      bgStart: "#000000",
-      bgEnd:   "#000000",
-      btnGrad1: "#ffb300",
-      btnGrad2: "#008cff",
+  pastel: {
+    label: "Pastel",
+    ui: {
+      bgStart: "#140c1c",
+      bgEnd:   "#050315",
+      btnGrad1: "#f9a8d4",  
+      btnGrad2: "#87bdff",  
     },
-
-    barsColor: (h) => `rgb(255, ${80 + h / 2}, 0)`,
-
-    mirrorColor: (h) => `rgb(0,${80 + h / 2}, 255)`,
-
-    waveGradient: ["#ffb300", "#6abd6a", "#008cff"],
-
-    particleHueBase: [42, 120, 207],
-    particleSaturation: 100,
+    barsColor:   (h) => {
+      const v = h / 255;
+      const hue = 280 + 40 * v;
+      return `hsl(${hue}, 55%, ${70 + v * 10}%)`;
+    },
+    mirrorColor: (h) => {
+      const v = h / 255;
+      const hue = 210 + 40 * v;
+      return `hsl(${hue}, 50%, ${68 + v * 10}%)`;
+    },
+    waveGradient: ["#f9a8d4", "#c4b5fd", "#87bdff"],
+    particleHueBase: [320, 260, 210],
+    particleSaturation: 60,
+  },
+  gold: {
+    label: "Gold",
+    ui: {
+      bgStart: "#120805",
+      bgEnd:   "#030202",
+      btnGrad1: "#facc15",
+      btnGrad2: "#f97316",
+    },
+    barsColor:   (h) => {
+      const v = h / 255;
+      const hue = 40 + 10 * v;
+      return `hsl(${hue}, 90%, ${40 + v * 20}%)`; 
+    },
+    mirrorColor: (h) => {
+      const v = h / 255;
+      const hue = 30 + 5 * v;
+      return `hsl(${hue}, 85%, ${35 + v * 20}%)`;
+    },
+    waveGradient: ["#facc15", "#f97316", "#ef4444"],
+    particleHueBase: [40, 30, 10],
+  },
+  retrowave: {
+    label: "RetroWave",
+    ui: {
+      bgStart: "#0b1120",
+      bgEnd:   "#020617",
+      btnGrad1: "#0abfdb", 
+      btnGrad2: "#9800ca",  
+    },
+    barsColor:   (h) => {
+      const v = h / 255;
+      const hue = 180 + 120 * v; 
+      return `hsl(${hue}, 85%, ${50 + v * 15}%)`;
+    },
+    mirrorColor: (h) => {
+      const v = h / 255;
+      const hue = 260 - 60 * v;
+      return `hsl(${hue}, 85%, ${45 + v * 15}%)`;
+    },
+    waveGradient: ["#0abfdb", "#a855f7", "#9800ca"],
+    particleHueBase: [190, 270, 320],
+  },
+  icefire: {
+    label: "IceFire",
+    ui: {
+      bgStart: "#020617",
+      bgEnd:   "#0b0a0f",
+      btnGrad1: "#38bdf8",  
+      btnGrad2: "#ee5c0d",  
+    },
+    barsColor:   (h) => {
+      const v = h / 255;
+      const hue = 200 - 40 * v; 
+      return `hsl(${hue}, 85%, ${45 + v * 15}%)`;
+    },
+    mirrorColor: (h) => {
+      const v = h / 255;
+      const hue = 20 + 20 * v; 
+      return `hsl(${hue}, 85%, ${40 + v * 15}%)`;
+    },
+    waveGradient: ["#38bdf8", "#3b82f6", "#ee5c0d"],
+    particleHueBase: [200, 210, 25],
   },
 };
 
@@ -170,9 +230,4 @@ window.applyThemeToDocument = function (theme) {
   },
 
 3) Save. That’s it.
-
-- main.js automatically fills the <select id="theme-select"> with all
-  entries in window.Themes (using .label).
-- drawBars, drawMirror, drawWave, drawCircle, and drawParticles already
-  use the current theme object; no other code changes needed.
 */

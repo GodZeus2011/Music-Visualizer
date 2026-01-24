@@ -57,12 +57,13 @@
   display: flex;
   flex-direction: column;      
   align-items: center;
-  height: 200px;               
+  height: 200px;    
+  transform: translateX(-40px);           
 }
 .volume-track {
   flex: 0 0 auto;
   transform: rotate(-90deg);
-  margin-top: 80px;            
+  margin-top: 80px;        
 }
 #volume {
   -webkit-appearance: none;
@@ -125,6 +126,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transform: translateX(-50px);
 }
 .media-progress {
   width: 100%;
@@ -191,6 +193,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
+  transform: translateY(20px);
 }
 #skip-back,
 #skip-forward {

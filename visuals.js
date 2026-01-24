@@ -1,5 +1,3 @@
-// visuals.js
-
 window.VisualsState = {
   wavePhase: 0,
   bandEnv: [0, 0, 0, 0, 0],
@@ -7,7 +5,8 @@ window.VisualsState = {
   waveEnergy: 0,
   PARTICLE_COUNT: 270,
   PARTICLE_LAYERS: 3,
-  particles: [],
+  particles: [],   
+  rays: [],    
 };
 
 window.Visuals = {
@@ -17,13 +16,13 @@ window.Visuals = {
   drawWave,
   drawParticles,
   drawMirror,
+  drawBurst,        
 };
 
 function handleResizeForVisuals() {
   VisualsState.particles = [];
+  VisualsState.rays = [];
 }
-
-// ---------- BARS ----------
 
 function drawBars(ctx, canvas, dataArray, theme) {
   if (!dataArray) return;
@@ -44,8 +43,6 @@ function drawBars(ctx, canvas, dataArray, theme) {
   }
 }
 
-// ---------- MULTI-RING CIRCLE ----------
-
 function drawCircle(ctx, canvas, dataArray, theme) {
   if (!dataArray) return;
 
@@ -62,8 +59,6 @@ function drawCircle(ctx, canvas, dataArray, theme) {
 
   const len = dataArray.length;
   if (!len) return;
-
-  // --- 1) Compute low / mid / high band energy ---
 
   const lowEnd  = Math.floor(len * 0.25);
   const midEnd  = Math.floor(len * 0.60);
@@ -89,8 +84,6 @@ function drawCircle(ctx, canvas, dataArray, theme) {
     highCount ? (highSum / highCount) / 255 : 0,
   ];
 
-  // --- 2) Smooth band envelopes ---
-
   if (!state.bandEnv || state.bandEnv.length !== 3) {
     state.bandEnv = [0, 0, 0];
   }
@@ -108,8 +101,6 @@ function drawCircle(ctx, canvas, dataArray, theme) {
 
   state.bandEnv = env;
 
-  // --- 3) Map envelopes to 3 ring radii ---
-
   const baseFrac = [0.70, 0.52, 0.36]; 
   const ampFrac  = [0.40, 0.32, 0.26];
 
@@ -125,8 +116,6 @@ function drawCircle(ctx, canvas, dataArray, theme) {
   for (let i = 0; i < 3; i++) {
     radii[i] += wobble * (0.5 + 0.5 * i); 
   }
-
-  // --- 4) Colors from theme ---
 
   const gradCols = (theme && theme.waveGradient) || ["#ff5efb", "#4cc3ff", "#7dffb0"];
   const c0 = gradCols[0];
@@ -186,8 +175,6 @@ function drawCircle(ctx, canvas, dataArray, theme) {
 
   state.wavePhase += 0.03;
 }
-
-// ---------- WAVE ----------
 
 function drawWave(ctx, canvas, dataArray, analyser, theme) {
   if (!dataArray || !analyser) return;
@@ -302,8 +289,6 @@ function drawWave(ctx, canvas, dataArray, analyser, theme) {
   ctx.stroke();
   ctx.globalAlpha = 1;
 }
-
-// ---------- PARTICLES ----------
 
 function initParticlesInternal(canvas, dataArray, theme) {
   const state = VisualsState;
@@ -432,8 +417,6 @@ function drawParticles(ctx, canvas, dataArray, theme) {
   ctx.restore();
 }
 
-// ---------- MIRROR ----------
-
 function drawMirror(ctx, canvas, dataArray, theme) {
   if (!dataArray) return;
 
@@ -454,4 +437,131 @@ function drawMirror(ctx, canvas, dataArray, theme) {
     ctx.fillRect(x, centerY, barWidth, h / 2);
     x += barWidth + 1;
   }
+}
+
+function drawBurst(ctx, canvas, dataArray, theme) {
+  if (!dataArray) return;
+
+  const state = VisualsState;
+  const w = canvas.width;
+  const h = canvas.height;
+
+  const rays = state.rays || (state.rays = []);
+
+  const maxRays       = 80;                   
+  const maxSpawnPerFrame = 8;                 
+  const minEnergy     = 0.12;
+  const maxRayLength  = Math.max(w, h) * 0.55;
+  const baseLifeSpeed = 0.02;
+  const extraLifeSpeed= 0.06;
+
+  const len = dataArray.length;
+  const startBin = 5;
+  const endBin   = Math.floor(len * 0.7);
+  const binCount = endBin - startBin;
+  if (binCount <= 0) return;
+
+  let sum = 0;
+  for (let i = startBin; i < endBin; i++) {
+    sum += dataArray[i];
+  }
+  const avg = sum / binCount / 255;          
+  const overallEnergy = Math.min(1, Math.pow(avg, 1.2));
+
+  const baseHues = (theme && theme.particleHueBase) || [220, 260, 180];
+
+  const spawnCount = Math.min(
+    maxSpawnPerFrame,
+    Math.floor(overallEnergy * maxSpawnPerFrame * 1.5)
+  );
+
+  for (let s = 0; s < spawnCount && rays.length < maxRays; s++) {
+    const frac = Math.random();
+    const binIndex = startBin + Math.floor(frac * binCount);
+    const raw = dataArray[binIndex] / 255;
+    const energy = Math.pow(raw, 1.3);
+
+    if (energy < minEnergy) continue;
+
+    const side = Math.floor(Math.random() * 4);
+    let x, y, baseAngle;
+    switch (side) {
+      case 0: 
+        x = Math.random() * w;
+        y = 0;
+        baseAngle = Math.PI / 2;
+        break;
+      case 1: 
+        x = w;
+        y = Math.random() * h;
+        baseAngle = Math.PI;
+        break;
+      case 2: 
+        x = Math.random() * w;
+        y = h;
+        baseAngle = -Math.PI / 2;
+        break;
+      default: 
+        x = 0;
+        y = Math.random() * h;
+        baseAngle = 0;
+        break;
+    }
+
+    const jitter = (Math.random() - 0.5) * 0.45;
+    const angle  = baseAngle + jitter;
+
+    const hueBase = baseHues[side % baseHues.length] || 220;
+    const hue     = hueBase + (binIndex / len) * 30;
+
+    rays.push({
+      x,
+      y,
+      angle,
+      energy,
+      life: 0,
+      lifeSpeed: baseLifeSpeed + extraLifeSpeed * energy,
+      hue,
+    });
+  }
+
+  ctx.save();
+
+  ctx.lineCap = "round";
+
+  for (let i = rays.length - 1; i >= 0; i--) {
+    const r = rays[i];
+    r.life += r.lifeSpeed;
+
+    if (r.life >= 1) {
+      rays.splice(i, 1);
+      continue;
+    }
+
+    const life   = r.life;
+    const energy = r.energy;
+
+    const length = (0.25 + energy * 0.75) * maxRayLength * life;
+
+    const x2 = r.x + Math.cos(r.angle) * length;
+    const y2 = r.y + Math.sin(r.angle) * length;
+
+    const alpha = (1 - life) * (0.35 + energy * 0.6);
+
+    const col = `hsla(${r.hue}, 90%, 60%, ${alpha})`;
+
+    ctx.shadowBlur  = 6 + 18 * energy;
+    ctx.shadowColor = col;
+    ctx.strokeStyle = col;
+    ctx.lineWidth   = 1.1 + 2.4 * energy;
+
+    ctx.beginPath();
+    ctx.moveTo(r.x, r.y);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  state.wavePhase += 0.01;
 }
